@@ -22,13 +22,10 @@ const AUTH_PORT = Number(process.env.MCP_AUTH_PORT) || 3001;
 const DISABLE_AUTH = process.env.DISABLE_AUTH === 'true';
 
 function getMcpServer() {
-  const server = new McpServer(
-    {
-      name: 'stateless-streamable-http-server',
-      version: '1.0.0',
-    },
-    { capabilities: { logging: {} } }
-  );
+  const server = new McpServer({
+    name: 'stateless-streamable-http-server',
+    version: '1.0.0',
+  });
 
   // Register a simple prompt
   server.registerPrompt(
