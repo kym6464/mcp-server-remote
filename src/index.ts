@@ -55,46 +55,24 @@ function getMcpServer() {
     }
   );
 
-  // Register a tool specifically for testing resumability
+  // Register a simple tool
   server.registerTool(
-    'start-notification-stream',
+    'add',
     {
-      title: 'Start Notification Stream',
-      description: 'Starts sending periodic notifications for testing resumability',
+      title: 'Add Two Numbers',
+      description: 'Adds two numbers together and returns the result',
       inputSchema: {
-        interval: z
-          .number()
-          .describe('Interval in milliseconds between notifications')
-          .default(100),
-        count: z.number().describe('Number of notifications to send (0 for 100)').default(10),
+        a: z.number().describe('First number'),
+        b: z.number().describe('Second number'),
       },
     },
-    async ({ interval, count }, extra) => {
-      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-      let counter = 0;
-
-      while (count === 0 || counter < count) {
-        counter++;
-        try {
-          await server.sendLoggingMessage(
-            {
-              level: 'info',
-              data: `Periodic notification #${counter} at ${new Date().toISOString()}`,
-            },
-            extra.sessionId
-          );
-        } catch (error) {
-          console.error('Error sending notification:', error);
-        }
-        // Wait for the specified interval
-        await sleep(interval);
-      }
-
+    async ({ a, b }) => {
+      const result = a + b;
       return {
         content: [
           {
             type: 'text',
-            text: `Started sending periodic notifications every ${interval}ms`,
+            text: `${a} + ${b} = ${result}`,
           },
         ],
       };
