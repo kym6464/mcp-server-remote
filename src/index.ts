@@ -16,7 +16,7 @@ import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middlew
 import { OAuthMetadata } from '@modelcontextprotocol/sdk/shared/auth.js';
 import { checkResourceAllowed } from '@modelcontextprotocol/sdk/shared/auth-utils.js';
 
-import { setupGoogleAuthServer } from './googleOAuthProvider.js';
+import { setupGoogleAuthServer } from './google-auth-provider.js';
 
 // Check for OAuth flag
 const useOAuth = process.argv.includes('--oauth');
@@ -170,7 +170,6 @@ if (useOAuth) {
         }
       }
 
-      // Convert the response to AuthInfo format
       return {
         token,
         clientId: data.client_id,
