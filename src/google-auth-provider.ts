@@ -14,13 +14,7 @@ import {
   OAuthServerProvider,
   AuthorizationParams,
 } from '@modelcontextprotocol/sdk/server/auth/provider.js';
-
-interface GoogleTokenInfo {
-  aud: string;
-  scope?: string;
-  exp?: number;
-  expires_in?: number;
-}
+import { OAuth2Client } from 'google-auth-library';
 
 // In-memory client store for DCR
 export class InMemoryClientsStore implements OAuthRegisteredClientsStore {
@@ -47,6 +41,7 @@ class GoogleOAuthProvider implements OAuthServerProvider {
   private readonly googleScopes: string[];
   private readonly authorizationUrl: string;
   private readonly tokenUrl: string;
+  private readonly googleOauthClient: OAuth2Client;
 
   constructor(
     clientsStore: OAuthRegisteredClientsStore,
@@ -60,6 +55,10 @@ class GoogleOAuthProvider implements OAuthServerProvider {
     this.googleScopes = googleScopes;
     this.authorizationUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
     this.tokenUrl = 'https://oauth2.googleapis.com/token';
+    this.googleOauthClient = new OAuth2Client({
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+    });
   }
 
   get clientsStore(): OAuthRegisteredClientsStore {
@@ -152,39 +151,22 @@ class GoogleOAuthProvider implements OAuthServerProvider {
   }
 
   async verifyAccessToken(token: string): Promise<AuthInfo> {
-    // Verify token with Google's tokeninfo endpoint
-    // Note: this is not the recommended way of doing this:
-    // https://developers.google.com/identity/openid-connect/openid-connect#validatinganidtoken
-    const response = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(token)}`
-    );
-
-    if (!response.ok) {
-      throw new Error('Invalid or expired token');
+    try {
+      const tokenInfo = await this.googleOauthClient.getTokenInfo(token);
+      if (tokenInfo.aud !== this.googleClientId) {
+        throw new Error('Token was not issued to this client');
+      }
+      // Convert milliseconds to seconds
+      const expiresAt = Math.floor(tokenInfo.expiry_date / 1000);
+      return {
+        token,
+        clientId: tokenInfo.aud,
+        scopes: tokenInfo.scopes || [],
+        expiresAt,
+      };
+    } catch (error) {
+      throw new Error(`Invalid or expired token: ${error}`);
     }
-
-    const tokenInfo = (await response.json()) as GoogleTokenInfo;
-
-    // Verify the token was issued to our client
-    if (tokenInfo.aud !== this.googleClientId) {
-      throw new Error('Token was not issued to this client');
-    }
-
-    // Calculate expiration timestamp
-    // Google returns exp as a string, so we need to convert to number
-    let expiresAt: number | undefined;
-    if (tokenInfo.exp) {
-      expiresAt = Number(tokenInfo.exp);
-    } else if (tokenInfo.expires_in) {
-      expiresAt = Math.floor(Date.now() / 1000) + Number(tokenInfo.expires_in);
-    }
-
-    return {
-      token,
-      clientId: tokenInfo.aud,
-      scopes: tokenInfo.scope ? tokenInfo.scope.split(' ') : [],
-      expiresAt,
-    };
   }
 }
 
