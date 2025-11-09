@@ -149,12 +149,8 @@ if (useOAuth) {
 
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          token: token,
-        }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ token: token }).toString(),
       });
 
       if (!response.ok) {
