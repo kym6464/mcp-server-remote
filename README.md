@@ -21,6 +21,39 @@ The goal of this project is to create a Remote MCP Server that uses Google as th
 
 4. Follow the [testing section](#testing) below to test your MCP server.
 
+<details>
+<summary>(OPTIONAL) setup instructions for [Claude Code](https://code.claude.com/docs) users</summary>
+
+1. The [block-env-files hook](.claude/hooks/block-env-files.sh) requires that you have [jq](https://jqlang.org/download/) installed on your system.
+
+2. [CLAUDE.md](./CLAUDE.md) expects that you have the https://github.com/modelcontextprotocol/typescript-sdk cloned to `../mcp-typescript-sdk`. This makes it easier for Claude to reference the SDK source code without having to dig through node_modules.
+</details>
+
+3. Create `.claude/settings.local.json` based on the following:
+
+   ```jsonc
+   {
+     "permissions": {
+       "additionalDirectories": [
+         "/path/to/mcp-typescript-sdk" // TODO
+       ]
+     },
+     "hooks": {
+       "PreToolUse": [
+         {
+           "matcher": "Read",
+           "hooks": [
+             {
+               "type": "command",
+               "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-env-files.sh"
+             }
+           ]
+         }
+       ]
+     }
+   }
+   ```
+
 ## Testing
 
 1. Start the server via `npm run dev`

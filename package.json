@@ -13,7 +13,7 @@
     "mcp",
     "server"
   ],
-  "author": "",
+  "author": "Kamal Muradov <muradovkamal10@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.6",
