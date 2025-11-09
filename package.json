@@ -9,7 +9,10 @@
     "build": "tsc",
     "start": "node dist/server/index.js"
   },
-  "keywords": ["mcp", "server"],
+  "keywords": [
+    "mcp",
+    "server"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -24,5 +27,9 @@
     "@types/node": "^22.10.2",
     "typescript": "^5.7.2",
     "tsx": "^4.19.2"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "printWidth": 100
   }
 }
