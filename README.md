@@ -27,7 +27,6 @@ The goal of this project is to create a Remote MCP Server that uses Google as th
 1. The [block-env-files hook](.claude/hooks/block-env-files.sh) requires that you have [jq](https://jqlang.org/download/) installed on your system.
 
 2. [CLAUDE.md](./CLAUDE.md) expects that you have the https://github.com/modelcontextprotocol/typescript-sdk cloned to `../mcp-typescript-sdk`. This makes it easier for Claude to reference the SDK source code without having to dig through node_modules.
-</details>
 
 3. Create `.claude/settings.local.json` based on the following:
 
@@ -54,6 +53,8 @@ The goal of this project is to create a Remote MCP Server that uses Google as th
    }
    ```
 
+</details>
+
 ## Testing
 
 1. Start the server via `npm run dev`
@@ -67,18 +68,20 @@ The goal of this project is to create a Remote MCP Server that uses Google as th
    - click through using the Continue button
 4. To test the MCP server, click the Connect button.
 
-## Code Structure
+## Development
+
+### Code Structure
 
 - [index.ts](src/index.ts) - Starts the MCP and Authorization servers
 - [google-auth-provider.ts](src/google-auth-provider.ts) - Handles authentication via Google OAuth
 - [disconnect.ts](src/disconnect.ts) - Supports [graceful shutdown](#graceful-shutdown)
 - [get-mcp-server.ts](src/get-mcp-server.ts) - Defines the MCP tools, resources, etc.
 
-## Authorization Approach
+### Authorization Approach
 
 Because Google doesn't support Dynamic Client Registration (DCR), we need to bridge the gap by presenting a DCR-compliant interface to MCP clients while using our pre-registered Google OAuth client credentials. This approach was inspired by [FastMCP's OAuthProxy](https://gofastmcp.com/servers/auth/authentication#oauthproxy).
 
-## Graceful Shutdown
+### Graceful Shutdown
 
 The [disconnect module](./src/disconnect.ts) acts as a central registry where other modules can register their cleanup methods. This is useful for modules that create stateful resources (e.g. database connections, HTTP servers) that need to be gracefully cleaned up before Node.js exits.
 
