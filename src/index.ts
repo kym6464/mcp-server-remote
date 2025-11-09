@@ -1,26 +1,29 @@
+import cors from 'cors';
 import express, { Request, Response } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
-import {
-  CallToolResult,
-  GetPromptResult,
-  ReadResourceResult,
-} from '@modelcontextprotocol/sdk/types.js';
-import cors from 'cors';
+import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
+import { OAuthMetadata } from '@modelcontextprotocol/sdk/shared/auth.js';
 import {
   getOAuthProtectedResourceMetadataUrl,
   mcpAuthMetadataRouter,
 } from '@modelcontextprotocol/sdk/server/auth/router.js';
-import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
-import { OAuthMetadata } from '@modelcontextprotocol/sdk/shared/auth.js';
+
+import type { OAuthTokenVerifier } from '@modelcontextprotocol/sdk/server/auth/provider.js';
+import type {
+  CallToolResult,
+  GetPromptResult,
+  ReadResourceResult,
+} from '@modelcontextprotocol/sdk/types.js';
 
 import { setupGoogleAuthServer } from './google-auth-provider.js';
 
-const useOAuth = process.argv.includes('--oauth');
+const MCP_PORT = Number(process.env.MCP_PORT) || 3000;
+const AUTH_PORT = Number(process.env.MCP_AUTH_PORT) || 3001;
+const DISABLE_AUTH = process.env.DISABLE_AUTH === 'true';
 
-const getServer = () => {
-  // Create an MCP server with implementation details
+function getMcpServer() {
   const server = new McpServer(
     {
       name: 'stateless-streamable-http-server',
@@ -107,26 +110,19 @@ const getServer = () => {
       };
     }
   );
-  return server;
-};
 
-const MCP_PORT = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : 3000;
-const AUTH_PORT = process.env.MCP_AUTH_PORT ? parseInt(process.env.MCP_AUTH_PORT, 10) : 3001;
+  return server;
+}
 
 const app = express();
 app.use(express.json());
 
-// Configure CORS to expose Mcp-Session-Id header for browser-based clients
-app.use(
-  cors({
-    origin: '*', // Allow all origins - adjust as needed for production
-    exposedHeaders: ['Mcp-Session-Id'],
-  })
-);
+// Support browser-based clients
+app.use(cors({ origin: '*', exposedHeaders: ['Mcp-Session-Id'] }));
 
 // Set up OAuth if enabled
 let authMiddleware = null;
-if (useOAuth) {
+if (!DISABLE_AUTH) {
   // Create auth middleware for MCP endpoints
   const mcpServerUrl = new URL(`http://localhost:${MCP_PORT}/mcp`);
   const authServerUrl = new URL(`http://localhost:${AUTH_PORT}`);
@@ -136,10 +132,9 @@ if (useOAuth) {
     mcpServerUrl,
   });
 
-  const tokenVerifier = {
-    verifyAccessToken: async (token: string) => {
+  const tokenVerifier: OAuthTokenVerifier = {
+    async verifyAccessToken(token) {
       const endpoint = oauthMetadata.introspection_endpoint;
-
       if (!endpoint) {
         throw new Error('No token verification endpoint available in metadata');
       }
@@ -149,13 +144,11 @@ if (useOAuth) {
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ token: token }).toString(),
       });
-
       if (!response.ok) {
         throw new Error(`Invalid or expired token: ${await response.text()}`);
       }
 
       const data = (await response.json()) as { [key: string]: any };
-
       return {
         token,
         clientId: data.client_id,
@@ -170,27 +163,25 @@ if (useOAuth) {
     mcpAuthMetadataRouter({
       oauthMetadata,
       resourceServerUrl: mcpServerUrl,
-      scopesSupported: ['mcp:tools'],
-      resourceName: 'MCP Demo Server',
     })
   );
 
   authMiddleware = requireBearerAuth({
     verifier: tokenVerifier,
-    requiredScopes: [],
     resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(mcpServerUrl),
   });
 }
 
 // MCP POST endpoint with optional auth
 const mcpPostHandler = async (req: Request, res: Response) => {
-  if (useOAuth && req.auth) {
+  if (!DISABLE_AUTH && req.auth) {
     console.log('Authenticated user:', req.auth);
   }
 
-  const server = getServer();
+  const server = getMcpServer();
   try {
     const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
+      // Session IDs are not useful in stateless mode
       sessionIdGenerator: undefined,
     });
     await server.connect(transport);
@@ -201,88 +192,75 @@ const mcpPostHandler = async (req: Request, res: Response) => {
       server.close();
     });
   } catch (error) {
-    console.error('Error handling MCP request:', error);
+    console.error('Failed to handle MCP request:', error);
     if (!res.headersSent) {
       res.status(500).json({
         jsonrpc: '2.0',
-        error: {
-          code: -32603,
-          message: 'Internal server error',
-        },
+        error: { code: -32603, message: 'Internal server error' },
         id: null,
       });
     }
   }
 };
 
-// Set up routes with conditional auth middleware
-if (useOAuth && authMiddleware) {
+if (authMiddleware) {
   app.post('/mcp', authMiddleware, mcpPostHandler);
 } else {
   app.post('/mcp', mcpPostHandler);
 }
 
-// Handle GET requests (not supported in stateless mode)
-const mcpGetHandler = async (req: Request, res: Response) => {
-  if (useOAuth && req.auth) {
-    console.log('Authenticated GET request from user:', req.auth);
-  }
-  console.log('Received GET MCP request');
+// GET requests are not supported in stateless mode
+const mcpGetHandler = async (_req: Request, res: Response) => {
   res.writeHead(405).end(
     JSON.stringify({
       jsonrpc: '2.0',
-      error: {
-        code: -32000,
-        message: 'Method not allowed.',
-      },
+      error: { code: -32000, message: 'Method not allowed.' },
       id: null,
     })
   );
 };
 
-// Handle DELETE requests (not supported in stateless mode)
-const mcpDeleteHandler = async (req: Request, res: Response) => {
-  if (useOAuth && req.auth) {
-    console.log('Authenticated DELETE request from user:', req.auth);
-  }
-  console.log('Received DELETE MCP request');
+// DELETE requests are not supported in stateless mode
+const mcpDeleteHandler = async (_req: Request, res: Response) => {
   res.writeHead(405).end(
     JSON.stringify({
       jsonrpc: '2.0',
-      error: {
-        code: -32000,
-        message: 'Method not allowed.',
-      },
+      error: { code: -32000, message: 'Method not allowed.' },
       id: null,
     })
   );
 };
 
 // Set up GET route with conditional auth middleware
-if (useOAuth && authMiddleware) {
+if (authMiddleware) {
   app.get('/mcp', authMiddleware, mcpGetHandler);
 } else {
   app.get('/mcp', mcpGetHandler);
 }
 
 // Set up DELETE route with conditional auth middleware
-if (useOAuth && authMiddleware) {
+if (authMiddleware) {
   app.delete('/mcp', authMiddleware, mcpDeleteHandler);
 } else {
   app.delete('/mcp', mcpDeleteHandler);
 }
 
-// Start the server
-app.listen(MCP_PORT, (error) => {
+const mcpServer = app.listen(MCP_PORT, (error) => {
   if (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
   }
-  console.log(`MCP Stateless Streamable HTTP Server listening on port ${MCP_PORT}`);
+  console.log(`MCP Streamable HTTP Server listening on port ${MCP_PORT}`);
 });
 
-// Handle server shutdown
 process.on('SIGINT', async () => {
-  console.log('Shutting down server...');
-  process.exit(0);
+  console.log('SIGINT received, shutting down...');
+  mcpServer.close((error) => {
+    if (error) {
+      console.error(`Failed to shut down MCP server: ${error.message}`);
+      process.exit(1);
+    }
+    console.log('Gracefully shut down MCP server');
+    process.exit(0);
+  });
 });
