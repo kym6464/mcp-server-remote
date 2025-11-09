@@ -1,3 +1,5 @@
+import { promisify } from 'node:util';
+
 import { OAuthRegisteredClientsStore } from '@modelcontextprotocol/sdk/server/auth/clients.js';
 import {
   OAuthClientInformationFull,
@@ -5,19 +7,19 @@ import {
   OAuthTokens,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import express, { Request, Response } from 'express';
-import { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import {
   createOAuthMetadata,
   mcpAuthRouter,
 } from '@modelcontextprotocol/sdk/server/auth/router.js';
-import {
-  OAuthServerProvider,
-  AuthorizationParams,
-} from '@modelcontextprotocol/sdk/server/auth/provider.js';
+import { OAuthServerProvider } from '@modelcontextprotocol/sdk/server/auth/provider.js';
 import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
 import { OAuthTokensSchema } from '@modelcontextprotocol/sdk/shared/auth.js';
+
+import type { GenerateAuthUrlOpts } from 'google-auth-library';
+import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
+import type { AuthorizationParams } from '@modelcontextprotocol/sdk/server/auth/provider.js';
+
 import { registerCleanupFunction } from './disconnect.js';
-import { promisify } from 'node:util';
 
 // In-memory client store for DCR
 export class InMemoryClientsStore implements OAuthRegisteredClientsStore {
@@ -41,7 +43,7 @@ class GoogleOAuthProvider implements OAuthServerProvider {
   private readonly _clientsStore: OAuthRegisteredClientsStore;
   private readonly googleClientId: string;
   private readonly googleClientSecret: string;
-  private readonly googleScopes: string[];
+  private readonly scope: GenerateAuthUrlOpts['scope'];
   private readonly googleOauthClient: OAuth2Client;
 
   // Google's OAuth server performs it
@@ -51,12 +53,12 @@ class GoogleOAuthProvider implements OAuthServerProvider {
     clientsStore: OAuthRegisteredClientsStore,
     googleClientId: string,
     googleClientSecret: string,
-    googleScopes: string[]
+    scope: GenerateAuthUrlOpts['scope']
   ) {
     this._clientsStore = clientsStore;
     this.googleClientId = googleClientId;
     this.googleClientSecret = googleClientSecret;
-    this.googleScopes = googleScopes;
+    this.scope = scope;
     this.googleOauthClient = new OAuth2Client({
       clientId: googleClientId,
       clientSecret: googleClientSecret,
@@ -77,7 +79,7 @@ class GoogleOAuthProvider implements OAuthServerProvider {
       redirect_uri: params.redirectUri,
       code_challenge: params.codeChallenge,
       code_challenge_method: CodeChallengeMethod.S256,
-      scope: this.googleScopes.join(' '),
+      scope: this.scope,
       ...(params.state && { state: params.state }),
     });
     res.redirect(authUrl);
