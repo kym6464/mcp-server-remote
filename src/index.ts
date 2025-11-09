@@ -113,10 +113,7 @@ if (!DISABLE_AUTH) {
   const mcpServerUrl = new URL(`http://localhost:${MCP_PORT}/mcp`);
   const authServerUrl = new URL(`http://localhost:${AUTH_PORT}`);
 
-  const oauthMetadata: OAuthMetadata = setupGoogleAuthServer({
-    authServerUrl,
-    mcpServerUrl,
-  });
+  const oauthMetadata: OAuthMetadata = setupGoogleAuthServer({ authServerUrl });
 
   const tokenVerifier: OAuthTokenVerifier = {
     async verifyAccessToken(token) {

@@ -164,12 +164,7 @@ class GoogleOAuthProvider implements OAuthServerProvider {
  * MCP clients can dynamically register, but actual authentication goes through Google
  * using pre-registered credentials.
  */
-export function setupGoogleAuthServer({
-  authServerUrl,
-}: {
-  authServerUrl: URL;
-  mcpServerUrl: URL;
-}): OAuthMetadata {
+export function setupGoogleAuthServer({ authServerUrl }: { authServerUrl: URL }): OAuthMetadata {
   const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
     throw new Error(
