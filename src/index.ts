@@ -15,7 +15,8 @@ import {
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import { OAuthMetadata } from '@modelcontextprotocol/sdk/shared/auth.js';
 import { checkResourceAllowed } from '@modelcontextprotocol/sdk/shared/auth-utils.js';
-import { setupAuthServer } from '../auth/demoInMemoryOAuthProvider.js';
+
+import { setupAuthServer } from './demoInMemoryOAuthProvider.js';
 
 // Check for OAuth flag
 const useOAuth = process.argv.includes('--oauth');

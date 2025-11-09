@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "Streamable HTTP MCP Server",
   "type": "module",
-  "main": "dist/server/index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx src/server/index.ts",
+    "dev": "tsx src/index.ts --oauth",
     "build": "tsc",
-    "start": "node dist/server/index.js"
+    "start": "node dist/index.js"
   },
   "keywords": [
     "mcp",
