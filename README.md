@@ -2,12 +2,24 @@
 
 The goal of this project is to create a Remote MCP Server that uses Google as the identity provider.
 
-## Code Structure
+## Getting Started
 
-- [index.ts](src/index.ts) - Starts the MCP and Authorization servers
-- [google-auth-provider.ts](src/google-auth-provider.ts) - Handles authentication via Google OAuth
-- [disconnect.ts](src/disconnect.ts) - Supports [graceful shutdown](#graceful-shutdown)
-- [get-mcp-server.ts](src/get-mcp-server.ts) - Defines the MCP tools, resources, etc.
+1. The first step is to acquire an OAuth Client ID and Client Secret by following [this guide](https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred). The following Authorized redirect URIs are recommended:
+
+   - http://localhost:6274/oauth/callback/debug - Used by the MCP Inspector authorization flow described in the [testing section](#testing) below
+   - http://localhost:6274/oauth/callback - Used by the MCP Inspector
+   - https://developers.google.com/oauthplayground - Used by Google's [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/) if you [use your own credentials](https://storage.googleapis.com/kamal-screenshots/ed8f07ba6269c7622202c599fce6807f.jpg).
+
+2. Once you have your Client ID and Client Secret, copy [src/.env.example](src/.env.example) to `src/.env.local` and replace the fake values.
+
+3. Run `npm install` followed by `npm run dev`. You should see the following output in your terminal:
+
+   ```
+   Authorization Server listening on port 3001
+   MCP Streamable HTTP Server listening on port 3000
+   ```
+
+4. Follow the [testing section](#testing) below to test your MCP server.
 
 ## Testing
 
@@ -21,6 +33,13 @@ The goal of this project is to create a Remote MCP Server that uses Google as th
    - in the OAuth Authentication card, click Guided Token Refresh
    - click through using the Continue button
 4. To test the MCP server, click the Connect button.
+
+## Code Structure
+
+- [index.ts](src/index.ts) - Starts the MCP and Authorization servers
+- [google-auth-provider.ts](src/google-auth-provider.ts) - Handles authentication via Google OAuth
+- [disconnect.ts](src/disconnect.ts) - Supports [graceful shutdown](#graceful-shutdown)
+- [get-mcp-server.ts](src/get-mcp-server.ts) - Defines the MCP tools, resources, etc.
 
 ## Authorization Approach
 
