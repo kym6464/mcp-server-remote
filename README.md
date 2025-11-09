@@ -1,6 +1,6 @@
 # mcp-server-remote
 
-The goal of this project is to create a Remote MCP Server that uses Google as the identity provider.
+This repository is a demonstration of a Remote MCP Server that uses Google as the identity provider, written in TypeScript. Watch this **[2 minute video](https://storage.googleapis.com/kamal-screenshots/334c31902279f6a424f6811e76c07199.mp4)** for an overview.
 
 ## Getting Started
 
