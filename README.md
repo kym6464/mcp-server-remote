@@ -12,7 +12,7 @@ This repository is a demonstration of a Remote MCP Server that uses Google as th
 
 2. Once you have your Client ID and Client Secret, copy [.env.example](.env.example) to `.env.local` and replace the fake values.
 
-3. Run `npm install` followed by `npm run dev`. You should see the following output in your terminal:
+3. Run `pnpm install` followed by `pnpm run dev`. You should see the following output in your terminal:
 
    ```
    Authorization Server listening on port 3001
@@ -57,7 +57,7 @@ This repository is a demonstration of a Remote MCP Server that uses Google as th
 
 ## Testing
 
-1. Start the server via `npm run dev`
+1. Start the server via `pnpm run dev`
 2. Start the [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) via `npx @modelcontextprotocol/inspector` and set the following options in the left pane:
    - Transport Type: Streamable HTTP
    - URL: http://localhost:3000/mcp
